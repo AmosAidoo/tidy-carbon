@@ -1,0 +1,59 @@
+# Node modules
+node_modules
+**/node_modules
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Dependency directories
+/.pnp
+.pnp.js
+
+# Build output
+dist
+build
+
+# Editor directories and files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+.env.*
+.env.local
+
+# Cache files
+.cache/
+**/.cache
+.nyc_output
+coverage
+*.tsbuildinfo
+*.eslintcache
+*.prettiercache
+
+# Monorepo-specific
+*.tgz
+*.lock-wscript
+**/node_modules/
+**/dist/
+lerna-debug.log
+
+# Testing output
+*.test-results.xml
+*.coverage
+jest.config.js.snap
+
+# Miscellaneous
+tmp/
+temp/
