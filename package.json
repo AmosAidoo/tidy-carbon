@@ -1,0 +1,14 @@
+{
+  "name": "etl-app",
+  "private": true,
+  "workspaces": ["packages/*"],
+  "scripts": {
+    "test": "npm run test --workspaces",
+    "build": "npm run build --workspaces",
+    "start": "npm run start --workspaces"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "concurrently": "^9.1.0"
+  }
+}

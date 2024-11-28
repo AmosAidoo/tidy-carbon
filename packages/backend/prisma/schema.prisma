@@ -1,0 +1,145 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  role      Role     @default(editor)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  createdPipelines Pipeline[] @relation("UserCreatedPipelines")
+  updatedPipelines Pipeline[] @relation("UserUpdatedPipelines")
+  createdStages    Stage[]    @relation("UserCreatedStages")
+  updatedStages    Stage[]    @relation("UserUpdatedStages")
+  createdJobs      Job[]
+  auditLogs        AuditLog[]
+  Project          Project[]
+}
+
+model Project {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  ownerId     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  pipelines Pipeline[]
+  owner     User       @relation(fields: [ownerId], references: [id])
+}
+
+model Pipeline {
+  id          String         @id @default(uuid())
+  projectId   String
+  name        String
+  description String?
+  status      PipelineStatus @default(draft)
+  createdBy   String
+  updatedBy   String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  // Relations
+  stages        Stage[]
+  jobs          Job[]
+  createdByUser User    @relation("UserCreatedPipelines", fields: [createdBy], references: [id])
+  updatedByUser User?   @relation("UserUpdatedPipelines", fields: [updatedBy], references: [id])
+  project       Project @relation(fields: [projectId], references: [id])
+}
+
+model Stage {
+  id           String    @id @default(uuid())
+  pipelineId   String
+  type         StageType
+  subtype      String
+  connectionId Int?
+  config       Json
+  positionX    Float
+  positionY    Float
+  createdBy    String
+  updatedBy    String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  // Relations
+  pipeline      Pipeline @relation(fields: [pipelineId], references: [id])
+  createdByUser User     @relation("UserCreatedStages", fields: [createdBy], references: [id])
+  updatedByUser User?    @relation("UserUpdatedStages", fields: [updatedBy], references: [id])
+}
+
+model Job {
+  id          String    @id @default(uuid())
+  pipelineId  String
+  status      JobStatus @default(pending)
+  startedAt   DateTime?
+  completedAt DateTime?
+  log         String?
+  createdBy   String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  pipeline      Pipeline @relation(fields: [pipelineId], references: [id])
+  createdByUser User     @relation(fields: [createdBy], references: [id])
+}
+
+model AuditLog {
+  id        String     @id @default(uuid())
+  userId    String
+  tableName String
+  recordId  Int
+  action    ActionType
+  changes   Json
+  createdAt DateTime   @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+}
+
+// Enums for predefined values
+
+enum Role {
+  admin
+  editor
+  viewer
+}
+
+enum PipelineStatus {
+  draft
+  active
+  completed
+}
+
+enum StageType {
+  source
+  transformation
+  destination
+}
+
+enum JobStatus {
+  pending
+  running
+  completed
+  failed
+}
+
+enum ActionType {
+  insert
+  update
+  delete
+}
