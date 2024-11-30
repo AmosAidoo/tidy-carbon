@@ -1,32 +1,38 @@
-import { useForm } from "react-hook-form"
+import { useFieldArray, useForm } from "react-hook-form"
 import ConfigModalBase from "./config-modal-base"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useNodeDataState } from "@/stores/node-store"
-import { SelectConfig, TransformationType } from "../../../../shared/types/transformations"
+import { MapConfig, TransformationType } from "shared/types/transformations"
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "../ui/form"
-import { Checkbox } from "../ui/checkbox"
+import { Button } from "../ui/button"
+import { Input } from "../ui/input"
+import { CircleX, Code } from "lucide-react"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip"
 
 const formSchema = z.object({
   label: z.string(),
-  fields: z.array(z.string())
+  fields: z.array(z.object({
+    key: z.string(),
+    expression: z.string()
+  }))
 })
 
-interface SelectConfigModalProps {
+interface MapConfigModalProps {
   id: string
   label: string
   open: boolean
   onOpenChange?: (open: boolean) => void
 }
 
-const MapConfigModal = ({ id, label, onOpenChange, open } : SelectConfigModalProps) => {
+const MapConfigModal = ({ id, label, onOpenChange, open } : MapConfigModalProps) => {
   const {
     useGetNodeData,
   } = useNodeDataState()
 
-  const currentNodeData = useGetNodeData<SelectConfig>(id)
+  const currentNodeData = useGetNodeData<MapConfig>(id)
 
-  const form = useForm<z.infer<typeof formSchema> & { type: TransformationType.Select }>({
+  const form = useForm<z.infer<typeof formSchema> & { type: TransformationType.Map }>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       label: label,
@@ -34,20 +40,25 @@ const MapConfigModal = ({ id, label, onOpenChange, open } : SelectConfigModalPro
     },
   })
 
-  const updateConfig = (values: SelectConfig): SelectConfig => {
+  const { fields, append, remove } = useFieldArray({
+    name: "fields",
+    control: form.control
+  })
+
+  const updateConfig = (values: MapConfig): MapConfig => {
     return {
       ...values,
-      type: TransformationType.Select,
+      type: TransformationType.Map,
     }
   }
   
   return (
-    <ConfigModalBase<SelectConfig>
+    <ConfigModalBase<MapConfig>
       id={id}
       form={form}
       onOpenChange={onOpenChange}
       open={open}
-      title="Edit Select Transformation"
+      title="Edit Map Transformation"
       updateConfig={updateConfig}
     >
       <FormField
@@ -56,44 +67,74 @@ const MapConfigModal = ({ id, label, onOpenChange, open } : SelectConfigModalPro
         render={() => (
           <FormItem>
             <div>
-              <FormLabel className="text-base">Select Fields</FormLabel>
+              <FormLabel className="text-base">Specify mappings</FormLabel>
               {/* <FormDescription>
                 Select the items you want to display in the sidebar.
               </FormDescription> */}
             </div>
-            {currentNodeData.fields && currentNodeData.fields.length && currentNodeData.fields.map((item) => (
-              <FormField
-                key={item}
-                control={form.control}
-                name="fields"
-                render={({ field }) => {
-                  return (
-                    <FormItem
-                      key={item}
-                      className="flex flex-row items-start space-x-3 space-y-0"
-                    >
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value?.includes(item)}
-                          onCheckedChange={(checked) => {
-                            return checked
-                              ? field.onChange([...field.value, item])
-                              : field.onChange(
-                                  field.value?.filter(
-                                    (value) => value !== item
-                                  )
-                                )
+            {
+              fields.map((field, index) => {
+                return (
+                  <div key={field.id} className="flex gap-2 w-full">
+                      <div>
+                        <FormField
+                          control={form.control}
+                          name={`fields.${index}.key`}
+                          render={({ field }) => {
+                            return (
+                              <FormItem
+                                className="flex flex-col items-start space-x-0 space-y-1"
+                              >
+                                <FormControl>
+                                  <Input placeholder="Key" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )
                           }}
                         />
-                      </FormControl>
-                      <FormLabel className="text-sm font-normal">
-                        {item}
-                      </FormLabel>
-                    </FormItem>
-                  )
-                }}
-              />
-            ))}
+                      </div>
+                      
+                      <div>
+                        <FormField
+                          control={form.control}
+                          name={`fields.${index}.expression`}
+                          render={({ field }) => {
+                            return (
+                              <FormItem
+                                className="flex flex-col items-start space-x-0 space-y-1"
+                              >
+                                <FormControl>
+                                  <Input placeholder="Expression" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )
+                          }}
+                        />
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="secondary"><Code /></Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Open expression editor</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                        
+                        <Button onClick={() => remove(index)}><CircleX /></Button>
+                      </div>
+                  </div>
+                )
+              })
+            }
+            <div className="flex justify-end" onClick={() => append({ key: "", expression: "" })}>
+              <Button>Add Field</Button>
+            </div>
             {!(currentNodeData.fields && currentNodeData.fields.length) && <p className="text-sm text-gray-500">No fields available</p>}
             <FormMessage />
           </FormItem>
