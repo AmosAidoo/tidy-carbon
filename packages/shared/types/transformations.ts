@@ -37,11 +37,15 @@ export interface FilterConfig {
   rules?: FilterGroup
 }
 
+export interface MapConfigField {
+  key: string
+  expression: string
+}
+
 // Map Config
 export interface MapConfig {
   type: TransformationType.Map
-  field: string
-  mappingFunction: string // JavaScript function as a string
+  fields: MapConfigField[]
 }
 
 // Join Config

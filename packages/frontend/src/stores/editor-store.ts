@@ -293,8 +293,7 @@ export const useEditorState = () => {
               }
               const config: MapConfig = {
                 type: TransformationType.Map,
-                field: "",
-                mappingFunction: ""
+                fields: []
               }
               setNodeData(newNode.id, {
                 config,
