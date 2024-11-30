@@ -11,6 +11,7 @@ import { useState } from "react"
 import FilterConfigModal from "./config-modals/filter-config-modal"
 import SelectConfigModal from "./config-modals/select-config-modal"
 import JoinConfigModal from "./config-modals/join-config-modal"
+import MapConfigModal from "./config-modals/map-config-modal"
 
 export const TransformationNodeIcons = {
   [TransformationType.Aggregate]: VscGroupByRefType,
@@ -24,7 +25,8 @@ export const TransformationNodeIcons = {
 export const TransformationNodeConfigModals = {
   [TransformationType.Filter]: FilterConfigModal,
   [TransformationType.Select]: SelectConfigModal,
-  [TransformationType.Join]: JoinConfigModal
+  [TransformationType.Join]: JoinConfigModal,
+  [TransformationType.Map]: MapConfigModal
 }
 
 export type TransformationNode = Node<
