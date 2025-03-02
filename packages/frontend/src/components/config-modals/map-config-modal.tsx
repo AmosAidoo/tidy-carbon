@@ -7,8 +7,9 @@ import { MapConfig, TransformationType } from "shared/types/transformations"
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "../ui/form"
 import { Button } from "../ui/button"
 import { Input } from "../ui/input"
-import { CircleX, Code } from "lucide-react"
+import { CircleX } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip"
+import ExpressionEditor from "../expression-editor"
 
 const formSchema = z.object({
   label: z.string(),
@@ -117,8 +118,8 @@ const MapConfigModal = ({ id, label, onOpenChange, open } : MapConfigModalProps)
                       <div className="flex gap-2">
                         <TooltipProvider>
                           <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button variant="secondary"><Code /></Button>
+                            <TooltipTrigger>
+                              <ExpressionEditor />
                             </TooltipTrigger>
                             <TooltipContent>
                               <p>Open expression editor</p>

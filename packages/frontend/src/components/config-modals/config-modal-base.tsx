@@ -88,7 +88,7 @@ const ConfigModalBase = <T extends TransformationConfig>({
                   <FormItem>
                     <FormLabel>Label</FormLabel>
                     <FormControl>
-                      <Input placeholder="Label" {...field} />
+                      <Input placeholder="Label" {...field} value={field.value as string} />
                     </FormControl>
                     {/* <FormDescription>
                       Label for node

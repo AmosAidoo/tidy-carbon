@@ -1,4 +1,15 @@
-import { FilterConfig, FilterConfigConditions, JoinConfig, JoinType, MapConfig, SelectConfig, TransformationConfig, TransformationType } from "./types/transformations"
+import { 
+  FilterConfig, 
+  FilterConfigConditions, 
+  JoinConfig, 
+  JoinType, 
+  MapConfig, 
+  SelectConfig, 
+  TransformationConfig, 
+  TransformationType 
+} from "./types/transformations"
+import { PeggySyntaxError, parse } from "./lib/parser"
+import { evaluate } from "./lib/evaluator"
 
 function extractFields(inputData: any[]) {
   if (Array.isArray(inputData) && inputData.length) {
@@ -39,7 +50,28 @@ export function applySimpleFilter(config: FilterConfig, data: any[]) {
   return { fields: extractFields(data), output: data.filter((item) => handler(item[field], value)) }
 }
 
-export function applyMap(config: MapConfig, data: any[]) {}
+export function applyMap(config: MapConfig, data: any[]) {
+  // So over there, for each element in our data, we apply the
+  // mapping from config. The expression is parsed by our parser
+  // and the AST is evaluated by our evaluator
+  const output = data.map(element => {
+    const targetOutput: any = {}
+    
+    for (let field of config.fields) {
+      try {
+        const ast = parse(field.expression)
+        const evaluatedResponse = evaluate(ast)
+        targetOutput[field.key] = evaluatedResponse
+      } catch (e: unknown) {
+        if (e instanceof PeggySyntaxError) {
+
+        }
+      }
+    }
+
+    return targetOutput
+  })
+}
 
 export function applySelect(config: SelectConfig, data: any[]) {
   const { fields } = config
