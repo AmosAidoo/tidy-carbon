@@ -89,7 +89,7 @@ const ConfigModalBase = <T extends TransformationConfig>({
       }
     }
     return { previewFields, incomingFields, previewData }
-  }, [api, getUpstreamSubgraph, id])
+  }, [api, currentNodeData, getUpstreamSubgraph, id, setNodeData])
   
 
   useEffect(() => {
@@ -146,7 +146,7 @@ const ConfigModalBase = <T extends TransformationConfig>({
                   <FormItem>
                     <FormLabel>Label</FormLabel>
                     <FormControl>
-                      <Input placeholder="Label" {...field} />
+                      <Input placeholder="Label" {...field} value={field.value as string} />
                     </FormControl>
                     {/* <FormDescription>
                       Label for node

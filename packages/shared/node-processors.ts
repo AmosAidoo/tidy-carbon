@@ -51,8 +51,6 @@ export function applySimpleFilter(config: FilterConfig, data: any[]) {
   return { fields: extractFields(data), output: data.filter((item) => handler(item[field], value)) }
 }
 
-export function applyMap(config: MapConfig, data: any[]) {}
-
 export function applySelect(config: SelectConfig, data: any[]) {
   const { fields } = config
 

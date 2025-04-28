@@ -2,12 +2,16 @@
   "name": "shared",
   "version": "1.0.0",
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "parser": "peggy --plugin ./node_modules/ts-pegjs/dist/tspegjs -o lib/parser.ts --cache ./grammar.pegjs"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",
     "jest": "^29.7.0",
     "ts-jest": "^29.2.5",
     "typescript": "^5.6.3"
+  },
+  "dependencies": {
+    "ts-pegjs": "^4.2.1"
   }
 }
