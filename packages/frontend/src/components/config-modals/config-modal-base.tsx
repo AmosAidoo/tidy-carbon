@@ -89,7 +89,7 @@ const ConfigModalBase = <T extends TransformationConfig>({
       }
     }
     return { previewFields, incomingFields, previewData }
-  }, [api, getUpstreamSubgraph, id])
+  }, [api, currentNodeData, getUpstreamSubgraph, id, setNodeData])
   
 
   useEffect(() => {
