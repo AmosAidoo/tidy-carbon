@@ -1,3 +1,3 @@
 export enum DestinationType {
-  GoogleCloudStorage = "gcs"
+  GoogleCloudStorage = "Gcs"
 }

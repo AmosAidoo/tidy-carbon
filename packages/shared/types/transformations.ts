@@ -1,11 +1,11 @@
 // Common Enum for Transformation Types
 export enum TransformationType {
-  Filter = "filter",
-  Map = "map",
-  Join = "join",
-  Aggregate = "aggregate",
-  Sort = "sort",
-  Select = "select",
+  Filter = "Filter",
+  Map = "Map",
+  Join = "Join",
+  Aggregate = "Aggregate",
+  Sort = "Sort",
+  Select = "Select",
 }
 
 // Type Definitions for Each Transformation Config

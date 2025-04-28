@@ -61,7 +61,7 @@ const SelectConfigModal = ({ id, label, onOpenChange, open } : SelectConfigModal
                 Select the items you want to display in the sidebar.
               </FormDescription> */}
             </div>
-            {currentNodeData.fields && currentNodeData.fields.length && currentNodeData.fields.map((item) => (
+            {currentNodeData.incomingFields && currentNodeData.incomingFields.length && currentNodeData.incomingFields.map((item) => (
               <FormField
                 key={item}
                 control={form.control}
