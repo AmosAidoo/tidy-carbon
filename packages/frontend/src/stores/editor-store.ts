@@ -1,4 +1,4 @@
-import { useNodesState, useEdgesState, useReactFlow, Edge, addEdge, Connection, EdgeChange, applyEdgeChanges, Node } from "@xyflow/react"
+import { useNodesState, useEdgesState, useReactFlow, Edge, addEdge, Connection, EdgeChange, applyEdgeChanges, Node, ReactFlowInstance } from "@xyflow/react"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { create } from "zustand"
 import { StageSubType, StageType } from "shared/types/stages"
@@ -33,12 +33,14 @@ export interface EditorState {
   setInitialNodes: (nodes: EditorNode[]) => void
   setInitialEdges: (edges: EditorEdge[]) => void
   isAnchoring: boolean
+  rfInstance: ReactFlowInstance | null
   anchoringNodeType: StageType | null
   anchoringNodeSubType: StageSubType | null
   setAnchoringNodeType: (anchoringNodeType: StageType | null) => void
   setAnchoringNodeSubType: (anchoringNodeSubType: StageSubType | null) => void
   setIsAnchoring: (isAnchoring: boolean) => void
   onSelectNode: (type: StageType, subType: StageSubType) => void,
+  setRfInstance: (rfInstance: ReactFlowInstance) => void
 }
 
 const useEditorStore = create<EditorState>((set) => ({
@@ -51,11 +53,13 @@ const useEditorStore = create<EditorState>((set) => ({
   setInitialNodes: (nodes: EditorNode[]) => set({ initialNodes: nodes }),
   setInitialEdges: (edges: EditorEdge[]) => set({ initialEdges: edges }),
   isAnchoring: false,
+  rfInstance: null,
   setIsAnchoring: (newIsAnchoring: boolean) => set({ isAnchoring: newIsAnchoring }),
   onSelectNode: (type: StageType, subType: StageSubType) => {
     set({ isAnchoring: true })
     set({ anchoringNodeType: type, anchoringNodeSubType: subType })
-  }
+  },
+  setRfInstance: (rfInstance) => set({ rfInstance }),
 }))
 
 export const useEditorState = () => {
@@ -73,7 +77,6 @@ export const useEditorState = () => {
   
   // These will be used for data fetching
   const setInitialNodes = useEditorStore((state) => state.setInitialNodes)
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const setInitialEdges = useEditorStore((state) => state.setInitialEdges)
   
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes)
@@ -82,10 +85,12 @@ export const useEditorState = () => {
   const [mousePosition, setMousePosition] = useState<MousePosition>({ x: 0, y: 0 })
   const [previewPosition, setPreviewPosition] = useState<MousePosition>({ x: 0, y: 0 })
 
+  const rfInstance = useEditorStore((state) => state.rfInstance)
+  const setRfInstance = useEditorStore((state) => state.setRfInstance)
+
   const { 
     setNodeData,
-    markDownstreamNodesAsStale,
-    evaluateUpstreamNodes 
+    markDownstreamNodesAsStale
   } = useNodeDataState()
   // Need to subscribe directly to nodeData changes
   const nodeData = useNodeDataStore((state) => state.nodeData)
@@ -94,9 +99,9 @@ export const useEditorState = () => {
   const canvasRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    window.addEventListener('mousemove', handleMouseMove)
+    window.addEventListener("mousemove", handleMouseMove)
     return () => {
-      window.removeEventListener('mousemove', handleMouseMove)
+      window.removeEventListener("mousemove", handleMouseMove)
     }
   }, [])
 
@@ -124,6 +129,55 @@ export const useEditorState = () => {
     setInitialEdges(edges)
   }, [edges, setInitialEdges])
 
+  const onSave = useCallback(() => {
+    if (rfInstance) {
+      let flow = rfInstance.toObject()
+      flow = {
+        ...flow,
+        nodes: flow.nodes.map(node => ({
+          ...node,
+          config: nodeData[node.id].config
+        })) as unknown as Node[]
+      }
+      alert(JSON.stringify(flow))
+      // localStorage.setItem(flowKey, JSON.stringify(flow))
+    }
+  }, [rfInstance, nodeData])
+
+  const getUpstreamSubgraph = useCallback((targetNodeId: string) => {
+    if (rfInstance) {
+      const flow = rfInstance.toObject()
+      const visited = new Set()
+      const queue = [targetNodeId]
+      const upstreamEdges = new Set<string>()
+
+      // Traverse upstream (reverse edges)
+      while (queue.length > 0) {
+        const current = queue.pop()
+        if (visited.has(current)) continue
+        visited.add(current)
+
+        for (const edge of flow.edges) {
+          if (edge.target === current) {
+            upstreamEdges.add(edge.id)
+            queue.push(edge.source)
+          }
+        }
+      }
+      
+      const filteredNodes = flow.nodes.filter(n => visited.has(n.id)).map(node => ({
+        ...node,
+        config: nodeData[node.id].config
+      }))
+      const filteredEdges = flow.edges.filter(e => upstreamEdges.has(e.id))
+      
+      return {
+        nodes: filteredNodes,
+        edges: filteredEdges,
+      }
+    }
+  }, [rfInstance])
+
   const isValidConnection = (connection: Edge | Connection, edges: Edge[], nodes: Node[]) => {
     const targetNode = nodes.find((node) => node.id === connection.target)
     if (!targetNode) return false
@@ -145,14 +199,13 @@ export const useEditorState = () => {
           const newEdges = addEdge({...connection, markerEnd: "arrowclosed", type: "step" }, previousEdges)
           if (connection.target) {
             markDownstreamNodesAsStale(connection.target, nodes, newEdges)
-            evaluateUpstreamNodes(connection.target, nodes, newEdges)
           }
           return newEdges
         })
       }
       
     },
-    [edges, evaluateUpstreamNodes, markDownstreamNodesAsStale, nodes, setEdges],
+    [edges, markDownstreamNodesAsStale, nodes, setEdges],
   )
   
   const handleMouseMove = (event: MouseEvent) => {
@@ -393,7 +446,11 @@ export const useEditorState = () => {
     previewPosition,
     canvasRef,
     onAddNode,
-    isValidConnection
+    isValidConnection,
+    rfInstance,
+    setRfInstance,
+    onSave,
+    getUpstreamSubgraph
   }
 }
 

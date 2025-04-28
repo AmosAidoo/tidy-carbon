@@ -3,9 +3,9 @@ import { SourceType } from "./sources";
 import { TransformationType } from "./transformations";
 
 export enum StageType {
-  Source = "source",
-  Transformation = "transformation",
-  Destination = "destination"
+  Source = "Source",
+  Transformation = "Transformation",
+  Destination = "Destination"
 }
 
 export type StageSubType = TransformationType | SourceType | DestinationType

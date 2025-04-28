@@ -1,7 +1,7 @@
 import { PropsWithChildren, useCallback, useEffect, useState } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../ui/dialog"
 import { NodeDataLoadingState, useNodeDataState } from "@/stores/node-store"
-import { useNodes, useEdges, useReactFlow } from "@xyflow/react"
+import { useReactFlow } from "@xyflow/react"
 import { TransformationConfig } from "../../../../shared/types/transformations"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../ui/form"
 import { Path, UseFormReturn } from "react-hook-form"
@@ -9,6 +9,9 @@ import { Loader2, Save } from "lucide-react"
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "../ui/table"
 import { Button } from "../ui/button"
 import { Input } from "../ui/input"
+import { useEditorState } from "@/stores/editor-store"
+
+import useApi from "@/api/useApi"
 
 type FormFieldValues<T extends TransformationConfig> = T & { label: string }
 
@@ -33,39 +36,94 @@ const ConfigModalBase = <T extends TransformationConfig>({
 }: PropsWithChildren<ModalBaseProps<T>>) => {
   const [saving, setSaving] = useState(false)
 
-  const nodes = useNodes()
-  const edges = useEdges()
+  const api = useApi()
 
   const {
     useGetNodeData,
     setNodeData,
-    evaluateUpstreamNodes
   } = useNodeDataState()
 
   const currentNodeData = useGetNodeData<T>(id)
 
   const { updateNodeData } = useReactFlow()
 
-  const refreshNodeState = useCallback(() => {
-    evaluateUpstreamNodes(id, nodes, edges)
-  }, [edges, evaluateUpstreamNodes, id, nodes])
+  const {
+    getUpstreamSubgraph
+  } = useEditorState()
+
+  const refreshNodeState = useCallback(async (config: T) => {
+    let previewData: Record<string, string>[] = []
+    let previewFields: string[] = []
+    let incomingFields: string[] = []
+    const upstreamSubgraph = getUpstreamSubgraph(id)
+    if (upstreamSubgraph) {
+      setNodeData(id, {
+        ...currentNodeData,
+        loadingState: NodeDataLoadingState.Processing
+      })
+      const idx = upstreamSubgraph.nodes.findIndex(node => node.id == id)
+      upstreamSubgraph.nodes[idx].config = config
+      try {
+        const response = await api.postPreview(upstreamSubgraph)
+        const { incomingSchema, schema, data } = response
+        previewData = data.map(row => {
+          const obj: Record<string, string> = {}
+          schema.forEach((field, index) => {
+            obj[field.name] = row[index]
+          })
+          return obj
+        })
+        previewFields = schema.map(field => field.name)
+        incomingFields = incomingSchema.map(field => field.name)
+        setNodeData(id, {
+          ...currentNodeData,
+          loadingState: NodeDataLoadingState.Done
+        })
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } catch (err: any) {
+        setNodeData(id, {
+          ...currentNodeData,
+          loadingState: NodeDataLoadingState.Error
+        })
+        alert("an error occured " + err.message)
+      }
+    }
+    return { previewFields, incomingFields, previewData }
+  }, [api, getUpstreamSubgraph, id])
   
 
   useEffect(() => {
-    if (open) {
-      refreshNodeState()
+    async function doRefreshNodeState() {
+      if (open && currentNodeData.isStale && currentNodeData.config) {
+        const newState = await refreshNodeState(currentNodeData.config)
+        setNodeData(id, {
+          ...currentNodeData,
+          incomingFields: newState.incomingFields,
+          data: newState.previewData,
+          fields: newState.previewFields,
+          isStale: false
+        })
+      }
     }
+    doRefreshNodeState()
   }, [open])
 
-  function onSubmit(values: FormFieldValues<T>) {
+  async function onSubmit(values: FormFieldValues<T>) {
     setSaving(true)
+    const newConfig = updateConfig(values)
+    const newState = await refreshNodeState(newConfig)
     setNodeData(id, {
       ...currentNodeData,
-      config: updateConfig(values),
+      incomingFields: newState.incomingFields,
+      data: newState.previewData, // Might need some more error proof handling
+      fields: newState.previewFields, // Might need some more error proof handling
+      config: newConfig,
+      isStale: false
     })
+    // Should this fail if call to refreshNodeState
+    // fails? Probably yes
     updateNodeData(id, { label: values.label })
     setSaving(false)
-    refreshNodeState()
   }
   
   return (
@@ -76,7 +134,7 @@ const ConfigModalBase = <T extends TransformationConfig>({
           <DialogDescription>{title}</DialogDescription>
         </DialogHeader>
 
-        <div className="w-full overflow-x-scroll px-1">
+        <div>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
 
@@ -101,7 +159,7 @@ const ConfigModalBase = <T extends TransformationConfig>({
               { children }
 
               {/* Preview */}
-              <div>
+              <div className="">
                 <div className="flex justify-between">
                   <h3>Data Preview</h3>
                   { currentNodeData?.loadingState == NodeDataLoadingState.Processing && <Loader2 className="animate-spin" /> }
@@ -111,7 +169,7 @@ const ConfigModalBase = <T extends TransformationConfig>({
                     {
                       currentNodeData?.data && currentNodeData.data.length ?
                         (
-                          <Table>
+                          <Table className="overflow-auto">
                               {/* <TableCaption>A list of your recent invoices.</TableCaption> */}
                               <TableHeader>
                                 <TableRow>

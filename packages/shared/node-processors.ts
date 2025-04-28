@@ -1,15 +1,16 @@
-import { 
-  FilterConfig, 
-  FilterConfigConditions, 
-  JoinConfig, 
-  JoinType, 
-  MapConfig, 
-  SelectConfig, 
-  TransformationConfig, 
-  TransformationType 
-} from "./types/transformations"
-import { PeggySyntaxError, parse } from "./lib/parser"
-import { evaluate } from "./lib/evaluator"
+/**
+ * The idea of this file was to have functions that can process individual transformation nodes.
+ * It was placed in this shared module so that the same code could be used by both the frontend
+ * and the backend.
+ * I noticed later that writing these would actually be a lot of work that spending time on might
+ * not be the best use of the time.
+ * Along the line I discovered Apache DataFusion which is a rust based query engine which can do
+ * everything that this file was supposed to do and more. As a result, I have made the decision to
+ * write the backend in rust to take advantage of DataFusion.
+ * This means that this file will no longer be used after I replace references of this code in the
+ * frontend with calls to a /preview endpoint in the rust backend
+ */
+import { FilterConfig, FilterConfigConditions, JoinConfig, JoinType, MapConfig, SelectConfig, TransformationConfig, TransformationType } from "./types/transformations"
 
 function extractFields(inputData: any[]) {
   if (Array.isArray(inputData) && inputData.length) {
@@ -48,29 +49,6 @@ export function applySimpleFilter(config: FilterConfig, data: any[]) {
   }
 
   return { fields: extractFields(data), output: data.filter((item) => handler(item[field], value)) }
-}
-
-export function applyMap(config: MapConfig, data: any[]) {
-  // So over there, for each element in our data, we apply the
-  // mapping from config. The expression is parsed by our parser
-  // and the AST is evaluated by our evaluator
-  const output = data.map(element => {
-    const targetOutput: any = {}
-    
-    for (let field of config.fields) {
-      try {
-        const ast = parse(field.expression)
-        const evaluatedResponse = evaluate(ast)
-        targetOutput[field.key] = evaluatedResponse
-      } catch (e: unknown) {
-        if (e instanceof PeggySyntaxError) {
-
-        }
-      }
-    }
-
-    return targetOutput
-  })
 }
 
 export function applySelect(config: SelectConfig, data: any[]) {

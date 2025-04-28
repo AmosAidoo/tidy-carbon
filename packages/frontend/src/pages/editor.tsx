@@ -32,7 +32,9 @@ const Editor = () => {
     previewPosition,
     anchoringNodeSubType,
     onAddNode,
-    isValidConnection
+    isValidConnection,
+    onSave,
+    setRfInstance,
   } = useEditorState()
 
   return (
@@ -60,7 +62,7 @@ const Editor = () => {
             </div>
 
             <div className="ml-auto mr-2 flex gap-2">
-              <Button variant="secondary">
+              <Button variant="secondary" onClick={onSave}>
                 <Save />
                 Save
               </Button>
@@ -94,6 +96,7 @@ const Editor = () => {
               onNodesChange={onNodesChange} 
               onEdgesChange={handleEdgesChange} 
               onConnect={onConnect}
+              onInit={setRfInstance}
               isValidConnection={(connection) => isValidConnection(connection, edges, nodes)}>
               <MiniMap />
               <Controls />
