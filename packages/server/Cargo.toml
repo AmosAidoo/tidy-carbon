@@ -7,4 +7,4 @@ edition = "2021"
 members = [ "api","migration"]
 
 [dependencies]
-api ={ path = "api" }
+api = { path = "api" }

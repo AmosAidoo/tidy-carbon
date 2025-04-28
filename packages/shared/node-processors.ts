@@ -1,3 +1,15 @@
+/**
+ * The idea of this file was to have functions that can process individual transformation nodes.
+ * It was placed in this shared module so that the same code could be used by both the frontend
+ * and the backend.
+ * I noticed later that writing these would actually be a lot of work that spending time on might
+ * not be the best use of the time.
+ * Along the line I discovered Apache DataFusion which is a rust based query engine which can do
+ * everything that this file was supposed to do and more. As a result, I have made the decision to
+ * write the backend in rust to take advantage of DataFusion.
+ * This means that this file will no longer be used after I replace references of this code in the
+ * frontend with calls to a /preview endpoint in the rust backend
+ */
 import { FilterConfig, FilterConfigConditions, JoinConfig, JoinType, MapConfig, SelectConfig, TransformationConfig, TransformationType } from "./types/transformations"
 
 function extractFields(inputData: any[]) {
