@@ -56,6 +56,42 @@ struct AppState {
 }
 
 #[derive(Debug, Deserialize)]
+pub enum FilterConfigConditions {
+    Equals,
+    NotEquals,
+    GreaterThan,
+    LessThan,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FilterRule {
+    pub field: String,
+    pub condition: FilterConfigConditions,
+    pub value: serde_json::Value,
+}
+
+#[derive(Debug, Deserialize)]
+pub enum FilterGroupOperator {
+    AND,
+    OR,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FilterGroup {
+    pub operator: FilterGroupOperator,
+    pub conditions: Vec<FilterCondition>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(tag = "type")]
+pub enum FilterCondition {
+    Rule(FilterRule),
+    Group(Box<FilterGroup>),
+}
+
+#[derive(Debug, Deserialize)]
 #[serde(tag = "type")]
 enum NodeConfig {
     // Source Types
@@ -63,7 +99,7 @@ enum NodeConfig {
     // Destination Types
 
     // Transformation Types
-    Filter {},
+    Filter { rules: FilterGroup },
     Map {},
     Join {},
     Aggregate {},
@@ -278,6 +314,95 @@ async fn preview(_state: State<AppState>, Json(input): Json<PreviewRequest>) -> 
     })
 }
 
+fn parse_literal(s: &str) -> Expr {
+    if let std::result::Result::Ok(i) = s.parse::<i64>() {
+        lit(i)
+    } else if let std::result::Result::Ok(f) = s.parse::<f64>() {
+        lit(f)
+    } else if let std::result::Result::Ok(b) = s.parse::<bool>() {
+        lit(b)
+    } else {
+        lit(s)
+    }
+}
+
+fn build_filter_predicate(group: &FilterGroup) -> Expr {
+    /*
+    {
+        type: "Group"
+        operator: "OR",
+        conditions: [
+            {
+                type: "Rule",
+                field: "x",
+                condition: "GreaterThan",
+                value: 10
+            },
+            {
+                type: "Group",
+                operator: "AND",
+                conditions: [
+                    {
+                        type: "Rule",
+                        field: "y",
+                        condition: "GreaterThan",
+                        value: 10
+                    },
+                    {
+                        type: "Rule",
+                        field: "y",
+                        condition: "LessThan",
+                        value: 20
+                    },
+                ]
+            }
+        ]
+    }
+    => (x > 10 OR (y > 10 AND y < 20))
+    */
+
+    let mut exprs: Vec<Expr> = group
+        .conditions
+        .iter()
+        .map(|cond| match cond {
+            FilterCondition::Rule(rule) => {
+                let left = col(&rule.field);
+                let right = parse_literal(&rule.value.as_str().unwrap_or(""));
+                // let right = match &rule.value {
+                //     serde_json::Value::String(s) => lit(s.clone()),
+                //     serde_json::Value::Number(n) => {
+                //         if n.is_f64() {
+                //             lit(n.as_f64().unwrap())
+                //         } else if n.is_i64() {
+                //             lit(n.as_i64().unwrap())
+                //         } else {
+                //             lit(n.as_u64().unwrap())
+                //         }
+                //     }
+                //     _ => lit("<unsupported>"), // Simplify for now
+                // };
+
+                match rule.condition {
+                    FilterConfigConditions::Equals => left.eq(right),
+                    FilterConfigConditions::NotEquals => left.not_eq(right),
+                    FilterConfigConditions::GreaterThan => left.gt(right),
+                    FilterConfigConditions::LessThan => left.lt(right),
+                }
+            }
+            FilterCondition::Group(group) => build_filter_predicate(group),
+        })
+        .collect();
+
+    let mut result = exprs.remove(0);
+    for expr in exprs {
+        result = match group.operator {
+            FilterGroupOperator::AND => result.and(expr),
+            FilterGroupOperator::OR => result.or(expr),
+        };
+    }
+    result
+}
+
 async fn apply_transformation(
     df: DataFrame,
     node: &Node,
@@ -285,7 +410,14 @@ async fn apply_transformation(
 ) -> anyhow::Result<DataFrame> {
     if let Some(config) = node.config.as_ref() {
         match config {
-            NodeConfig::Filter {} => Ok(df),
+            NodeConfig::Filter { rules } => {
+                if rules.conditions.len() == 0 {
+                    return Ok(df)
+                }
+                let predicate = build_filter_predicate(rules);
+                let df = df.filter(predicate)?;
+                Ok(df)
+            },
             NodeConfig::Select { fields } => {
                 let mut cols = vec![];
                 for field in fields {

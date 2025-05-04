@@ -2,7 +2,7 @@ import { useNodesState, useEdgesState, useReactFlow, Edge, addEdge, Connection, 
 import { useCallback, useEffect, useRef, useState } from "react"
 import { create } from "zustand"
 import { StageSubType, StageType } from "shared/types/stages"
-import { FilterConfig, FilterConfigConditions, JoinConfig, JoinType, MapConfig, SelectConfig, TransformationType } from "shared/types/transformations"
+import { FilterConfig, FilterGroupOperator, JoinConfig, JoinType, MapConfig, SelectConfig, TransformationType } from "shared/types/transformations"
 import { TransformationNode } from "@/components/transformation-node"
 import { SourceNode } from "@/components/source-node"
 import { SourceType } from "shared/types/sources"
@@ -302,9 +302,11 @@ export const useEditorState = () => {
               }
               const config: FilterConfig = {
                 type: TransformationType.Filter,
-                condition: FilterConfigConditions.Equals,
-                field: "",
-                value: ""
+                rules: {
+                  type: "Group",
+                  conditions: [],
+                  operator: FilterGroupOperator.AND
+                }
               }
               setNodeData(newNode.id, {
                 config,

@@ -11,9 +11,9 @@ import { Button } from "../ui/button"
 import { Input } from "../ui/input"
 import { useEditorState } from "@/stores/editor-store"
 
-import useApi from "@/api/useApi"
+import useApi, { SchemaField } from "@/api/useApi"
 
-type FormFieldValues<T extends TransformationConfig> = T & { label: string }
+export type FormFieldValues<T extends TransformationConfig> = T & { label: string }
 
 interface ModalBaseProps<T extends TransformationConfig> {
   id: string
@@ -53,8 +53,8 @@ const ConfigModalBase = <T extends TransformationConfig>({
 
   const refreshNodeState = useCallback(async (config: T) => {
     let previewData: Record<string, string>[] = []
-    let previewFields: string[] = []
-    let incomingFields: string[] = []
+    let previewFields: SchemaField[] = []
+    let incomingFields: SchemaField[] = []
     const upstreamSubgraph = getUpstreamSubgraph(id)
     if (upstreamSubgraph) {
       setNodeData(id, {
@@ -73,8 +73,8 @@ const ConfigModalBase = <T extends TransformationConfig>({
           })
           return obj
         })
-        previewFields = schema.map(field => field.name)
-        incomingFields = incomingSchema.map(field => field.name)
+        previewFields = schema
+        incomingFields = incomingSchema
         setNodeData(id, {
           ...currentNodeData,
           loadingState: NodeDataLoadingState.Done
@@ -111,6 +111,7 @@ const ConfigModalBase = <T extends TransformationConfig>({
   async function onSubmit(values: FormFieldValues<T>) {
     setSaving(true)
     const newConfig = updateConfig(values)
+    alert(JSON.stringify(newConfig, null, 2))
     const newState = await refreshNodeState(newConfig)
     setNodeData(id, {
       ...currentNodeData,
@@ -134,7 +135,7 @@ const ConfigModalBase = <T extends TransformationConfig>({
           <DialogDescription>{title}</DialogDescription>
         </DialogHeader>
 
-        <div>
+        <div className="flex-1 overflow-auto">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
 
@@ -156,10 +157,17 @@ const ConfigModalBase = <T extends TransformationConfig>({
                 )}
               />
 
-              { children }
+              {children}
+              
+              <div className="flex justify-end">
+                <Button type="submit" disabled={saving}>
+                  {saving ? <Loader2 className="animate-spin" /> : <Save />}
+                  Save
+                </Button>
+              </div>
 
               {/* Preview */}
-              <div className="">
+              <div>
                 <div className="flex justify-between">
                   <h3>Data Preview</h3>
                   { currentNodeData?.loadingState == NodeDataLoadingState.Processing && <Loader2 className="animate-spin" /> }
@@ -169,7 +177,7 @@ const ConfigModalBase = <T extends TransformationConfig>({
                     {
                       currentNodeData?.data && currentNodeData.data.length ?
                         (
-                          <Table className="overflow-auto">
+                          <Table>
                               {/* <TableCaption>A list of your recent invoices.</TableCaption> */}
                               <TableHeader>
                                 <TableRow>
@@ -204,13 +212,6 @@ const ConfigModalBase = <T extends TransformationConfig>({
                         )
                     }
                 </div>
-              </div>
-
-              <div className="flex justify-end">
-                <Button type="submit" disabled={saving}>
-                  { saving ? <Loader2 className="animate-spin" /> : <Save /> }
-                  Save
-                </Button>
               </div>
             </form>
           </Form>

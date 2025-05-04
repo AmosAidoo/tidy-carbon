@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react"
 import axios, { AxiosInstance } from "axios"
 import { Edge, Node } from "@xyflow/react"
 
-interface SchemaField {
+export interface SchemaField {
   name: string
   dataType: string
 }
