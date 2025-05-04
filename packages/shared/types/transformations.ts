@@ -12,29 +12,33 @@ export enum TransformationType {
 
 // Filter Config
 export enum FilterConfigConditions {
-  Equals = "equals",
-  NotEquals = "not equals",
-  GreaterThan = "greater than",
-  LessThan = "less than"
+  Equals = "Equals",
+  NotEquals = "NotEquals",
+  GreaterThan = "GreaterThan",
+  LessThan = "LessThan"
 }
 
-export interface FilterCondition {
+export interface FilterRule {
+  type: "Rule"
   field: string
   condition: FilterConfigConditions
   value: any
 }
 
+export enum FilterGroupOperator {
+  AND = "AND",
+  OR = "OR"
+}
+
 export interface FilterGroup {
-  operator: "AND" | "OR"
-  conditions: (FilterCondition | FilterGroup)[]
+  type: "Group"
+  operator: FilterGroupOperator
+  conditions: (FilterRule | FilterGroup)[]
 }
 
 export interface FilterConfig {
   type: TransformationType.Filter
-  field: string
-  condition: FilterConfigConditions
-  value: any
-  rules?: FilterGroup
+  rules: FilterGroup
 }
 
 export interface MapConfigField {

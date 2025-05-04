@@ -63,38 +63,38 @@ const SelectConfigModal = ({ id, label, onOpenChange, open } : SelectConfigModal
             </div>
             {currentNodeData.incomingFields && currentNodeData.incomingFields.length && currentNodeData.incomingFields.map((item) => (
               <FormField
-                key={item}
+                key={item.name}
                 control={form.control}
                 name="fields"
                 render={({ field }) => {
                   return (
                     <FormItem
-                      key={item}
+                      key={item.name}
                       className="flex flex-row items-start space-x-3 space-y-0"
                     >
                       <FormControl>
                         <Checkbox
-                          checked={field.value?.includes(item)}
+                          checked={field.value?.includes(item.name)}
                           onCheckedChange={(checked) => {
                             return checked
-                              ? field.onChange([...field.value, item])
+                              ? field.onChange([...field.value, item.name])
                               : field.onChange(
                                   field.value?.filter(
-                                    (value) => value !== item
+                                    (value) => value !== item.name
                                   )
                                 )
                           }}
                         />
                       </FormControl>
                       <FormLabel className="text-sm font-normal">
-                        {item}
+                        {item.name}
                       </FormLabel>
                     </FormItem>
                   )
                 }}
               />
             ))}
-            {!(currentNodeData.fields && currentNodeData.fields.length) && <p className="text-sm text-gray-500">No fields available</p>}
+            {!(currentNodeData.incomingFields && currentNodeData.incomingFields.length) && <p className="text-sm text-gray-500">No fields available</p>}
             <FormMessage />
           </FormItem>
         )}

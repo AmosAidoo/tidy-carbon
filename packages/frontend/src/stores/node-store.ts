@@ -1,6 +1,7 @@
 import { create } from "zustand"
 import { TransformationConfig } from "shared/types/transformations"
 import { getOutgoers, Node, Edge } from "@xyflow/react"
+import { SchemaField } from "@/api/useApi"
 
 export enum NodeDataLoadingState {
   Processing = "processing",
@@ -10,8 +11,8 @@ export enum NodeDataLoadingState {
 
 export interface NodeData<T extends TransformationConfig> {
   config?: T
-  incomingFields?: string[]
-  fields?: string[]
+  incomingFields?: SchemaField[]
+  fields?: SchemaField[]
   data?: unknown[]
   isStale?: boolean
   loadingState?: NodeDataLoadingState
