@@ -1,13 +1,15 @@
+mod extractors;
 mod handlers;
 mod models;
 mod routes;
 mod transformations;
 mod utils;
 
+use extractors::claims::Auth0Config;
 use models::AppState;
 use routes::build_router;
 use sea_orm::Database;
-use std::env;
+use std::{env, sync::Arc};
 use tokio::net::TcpListener;
 
 #[tokio::main]
@@ -24,7 +26,10 @@ async fn start() -> anyhow::Result<()> {
         .await
         .expect("Database connection failed");
 
-    let state = AppState { conn };
+    let state = AppState {
+        conn,
+        auth0_config: Arc::new(Auth0Config::default()),
+    };
 
     let app = build_router(state);
 
