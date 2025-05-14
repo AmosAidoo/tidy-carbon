@@ -10,6 +10,7 @@ use datafusion::{
 };
 
 use crate::{
+    extractors::claims::Claims,
     models::{AdjacencyList, AppState, PreviewRequest, PreviewResponse, SchemaField},
     transformations::apply_transformation,
 };
@@ -68,6 +69,7 @@ fn topological_sort(g: &PreviewRequest) -> Vec<String> {
 /// transform them and execute them in DataFusion
 pub async fn handle_preview(
     _state: State<AppState>,
+    _claims: Claims,
     Json(input): Json<PreviewRequest>,
 ) -> impl IntoResponse {
     let topological_sort_order = topological_sort(&input);

@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react"
 import axios, { AxiosInstance } from "axios"
 import { Edge, Node } from "@xyflow/react"
+import { useAuth0 } from "@auth0/auth0-react"
 
 export interface SchemaField {
   name: string
@@ -21,6 +22,7 @@ interface PreviewResponse {
 const useApi = () => {
   const [token, setToken] = useState<string | null>(null)
   const [apiError, setApiError] = useState<string | null>(null)
+  const { getAccessTokenSilently } = useAuth0()
 
   useEffect(() => {
     const storedToken = localStorage.getItem("apiToken")
@@ -37,7 +39,9 @@ const useApi = () => {
   const api: AxiosInstance = useMemo(() => {
     const instance = axios.create({
       baseURL: import.meta.env.VITE_API_URL,
-      headers: { "Content-Type": "application/json" }
+      headers: {
+        "Content-Type": "application/json",
+      }
     })
 
     instance.interceptors.request.use(
@@ -73,7 +77,14 @@ const useApi = () => {
   }
 
   const endpoints = {
-    postPreview: (data: PreviewRequest): Promise<PreviewResponse> => post("/preview", data)
+    postPreview: async (data: PreviewRequest): Promise<PreviewResponse> => {
+      const accessToken = await getAccessTokenSilently()
+      return post("/preview", data, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`
+        }
+      })
+    }
   }
 
   return {

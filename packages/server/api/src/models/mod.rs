@@ -1,11 +1,14 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 use sea_orm::DatabaseConnection;
 use serde::{Deserialize, Serialize};
 
+use crate::extractors::claims::Auth0Config;
+
 #[derive(Clone)]
 pub struct AppState {
     pub conn: DatabaseConnection,
+    pub auth0_config: Arc<Auth0Config>,
 }
 
 #[derive(Debug, Deserialize)]
